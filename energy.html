@@ -1,0 +1,43 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+
+<head>
+	<script src="http://neue.cc/linq.min.js"></script>
+	<script src="//ajax.googleapis.com/ajax/libs/jquery/2.1.0/jquery.min.js"></script>
+	<script src="//ajax.googleapis.com/ajax/libs/jqueryui/1.10.4/jquery-ui.min.js"></script>
+	<script src="js/config.js"></script>
+	<script type="text/javascript">
+
+	</script>
+	<link rel="stylesheet" href="//ajax.googleapis.com/ajax/libs/jqueryui/1.10.4/themes/smoothness/jquery-ui.css" />
+	<style>
+		#feedback { font-size: 1.4em; }
+		#energyDevices .ui-selecting { background: #FECA40; }
+		#energyDevices .ui-selected { background: #F39814; color: white; }
+		#energyDevices { list-style-type: none; margin: 0; padding: 0 }
+		#energyDevices li { margin: 1px; padding: 0.4em; font-size: 12px; height: 12px; }
+		
+	</style>
+	<title>Fibaro Charts</title>
+</head>
+
+<body>
+	<script src="Highcharts/js/highcharts.js"></script>
+	<script src="Highcharts/js/modules/exporting.js"></script>
+	<script src="Highcharts/js/modules/drilldown.js"></script>
+
+	<div id="energyConfig" title="Configure Energy Devices">
+		<ol id="energyDevices">
+			<li class="placeholder">Loading energy devices</li>
+		</ol>
+		Main Energy meter: 
+		<select id="mainMeter">
+			<option value="0">None</option>
+		</select>
+	</div>
+</div>
+<button id="showConfigEnergyDevices">Config Energy Devices</button>
+<div id="energy" style="min-width: 310px; height: 400px; margin: 0 auto"></div>
+</body>
+
+</html>
