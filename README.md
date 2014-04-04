@@ -13,7 +13,7 @@ If Fibaro HC2 supported JSONp we could access the data without the need of a por
 Energy Charts
 ----------
 Presents your energy consumption as a stacked column chart so you can get att great overview witch devices is consuming the most energy.
-If you have a main energy meter, like Aeon HEM, it will subtract all known consumptions and add an Unknown service.
+If you have a main energy meter, like Aeon HEM, it will subtract all known consumptions and add an Unknown series.
 It will automatically groups the data based on the time span you are view.
 
 Installation
