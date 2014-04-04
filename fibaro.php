@@ -3,6 +3,10 @@
 //Getting posted data
 $data = json_decode(file_get_contents('php://input'), true);
 
+if (!file_exists('config')) {
+    mkdir('config', 0777, true);
+}
+
 if(!file_exists("config/energyDevices.json")){
 	$str = '{
 	"mainMeter": 0,
