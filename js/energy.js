@@ -1,8 +1,11 @@
-function loadEnergyChart (from, to) {
+function loadEnergyChart (from, to, grouping, seriesType) {
+	liveData(false);
+	if(typeof seriesType === 'undefined')
+		seriesType = 'column';
 	energyChart.showLoading("Loading data...");
 	$.getJSON('/config/energyDevices.json', function(devices, textStatus) {
 		if(textStatus == "success"){
-			series = Enumerable.From(devices.energyDevices).Select("{name: $.name,fibaroId: $.fibaroId,  type: 'column', data: []}").ToArray();
+			series = Enumerable.From(devices.energyDevices).Select("{name: $.name,fibaroId: $.fibaroId, id: $.fibaroId, type: '"+seriesType+"', data: []}").ToArray();
 			if(devices.mainMeter != 0){
 				mainMeterSerie = series.filter(function(serie) {
 					return serie.fibaroId == devices.mainMeter;
@@ -10,20 +13,24 @@ function loadEnergyChart (from, to) {
 				if(typeof(mainMeterSerie) !== 'undefined'){
 					mainMeterSerie.type = "line";
 					mainMeterSerie.step = "center";
-					series.push({name: 'Unknown',fibaroId: 0,  type: 'column', data: []});
+					if(seriesType != 'area')
+						series.push({name: 'Unknown',fibaroId: 0,  type: 'column', data: []});
 				}
 			}
 			devicelist = Enumerable.From(devices.energyDevices).Select("$.fibaroId").ToArray();
 			var range1 = moment().range(moment(from), moment(to));
-			var periodInHours = (range1.end.unix()-range1.start.unix())/3600;
-			if(periodInHours <= 1)
-				group = 'm';
-			else if(periodInHours <= 36)
-				group = 'h';
-			else if(periodInHours <= 24*45)
-				group = 'd';
-			else if(periodInHours <= 24*30*18)
-				group = 'M';
+			if(typeof grouping === 'undefined'){
+				var periodInHours = (range1.end.unix()-range1.start.unix())/3600;
+				if(periodInHours <= 1)
+					group = 'm';
+				else if(periodInHours <= 36)
+					group = 'h';
+				else if(periodInHours <= 24*45)
+					group = 'd';
+				else if(periodInHours <= 24*30*18)
+					group = 'M';
+			}else
+				group = grouping;
 			
 			var range2 = moment().range(moment(from), moment(from).add(group, 1));
 
@@ -32,11 +39,12 @@ function loadEnergyChart (from, to) {
 				end = moment(periodStart).add(group, 1).unix();
 				if(moment().unix() <= end)
 					end = moment().unix();
+				
 				calls.push(
 					$.getJSON("fibaro.php?panel=energy&type=comparison-graph&from="+periodStart.unix()+"&to="+end+"&deviceId="+devicelist.toString(), function(energyDevicesData, energyDevicesDataStatus) {
 						var sum = 0;
 						energyChart.hideLoading();
-						energyChart.showLoading("Processing data for "+periodStart.format("YYYY-MM-DD HH:ss"));
+						energyChart.showLoading("Processing data for "+periodStart.format("YYYY-MM-DD HH:mm:ss"));
 						$.each( energyDevicesData, function( energyDataIndex, energyDeviceData) {
 							devicePeriodData = 0;
 							diffTot = 0;
@@ -49,6 +57,8 @@ function loadEnergyChart (from, to) {
 
 							});
 							hour = ((moment(periodStart)).add(group, 1).unix()-periodStart.unix())/3600;
+							
+							
 							if(group != "m")
 								devicePeriodData *= hour;
 							series.filter(function(serie) {
@@ -83,6 +93,50 @@ function loadEnergyChart (from, to) {
 			console.log("Error getting energy devices, status: "+textStatus);
 	})
 }
+function loadLiveEnergyData (){
+	if(!dataLoading){
+		dataLoading = true;
+		start = new Date();
+		$.getJSON("fibaro.php?panel=energy&type=comparison-graph&from=now-1&to=now&deviceId="+devicelist.toString(), function(energyDevicesData, energyDevicesDataStatus) {
+			var x = (new Date(energyDevicesData[0].data[0][0])).getTime();
+			$.each( energyDevicesData, function( energyDataIndex, energyDeviceData) {
+				energyChart.get(energyDeviceData.id).addPoint([x, energyDeviceData.data[0][1]], false, ((x-energyChart.get(energyDeviceData.id).data[0].x) >(5*60*1000)));
+			});
+			energyChart.redraw();
+			dataLoading = false;
+		});
+	}
+}
+function initLiveEnergy () {
+	$.getJSON('/config/energyDevices.json', function(devices, textStatus) {
+		if(textStatus == "success"){
+			devicelist = Enumerable.From(devices.energyDevices).Select("$.fibaroId").ToArray();
+			series = Enumerable.From(devices.energyDevices).Select("{name: $.name, id: $.fibaroId, type: 'area', data: []}").ToArray();
+			if(devices.mainMeter != 0){
+				mainMeterSerie = series.filter(function(serie) {
+					return serie.id == devices.mainMeter;
+				})[0];
+				if(typeof(mainMeterSerie) !== 'undefined'){
+					mainMeterSerie.type = "line";
+					mainMeterSerie.step = "center";
+				}
+			}
+			energyChartOptions.series = series;
+			energyChart = $('#energy').highcharts(energyChartOptions).highcharts();
+
+			loadEnergyChart(moment().subtract('m', 5).unix()*1000, moment().subtract('m', 1).unix()*1000, 'm', 'area');
+			liveData(true);
+		}
+	});
+}
+
+function liveData(enable){
+	if(enable)
+		liveDataInterval = setInterval(function(){loadLiveEnergyData()},1000);
+	else
+		clearInterval(liveDataInterval);
+}
+
 $(function () {
 	$(document).ready(function() {
 
@@ -134,21 +188,6 @@ $(function () {
 							return (this.value).toFixed(0)  + " Wh";
 						}
 					}
-				},
-				stackLabels: {
-					enabled: true,
-					style: {
-						fontWeight: 'bold',
-						color: (Highcharts.theme && Highcharts.theme.textColor) || 'gray'
-					},
-					formatter: function () {
-						var maxElement = this.total;
-						if (maxElement > 2000) {
-							return (this.total / 1000).toFixed(2) + " kWh";
-						} else {
-							return (this.total).toFixed(0) + " Wh";
-						}
-					}
 				}
 			},
 			tooltip: {
@@ -175,6 +214,12 @@ $(function () {
 				column: {
 					stacking: 'normal',
 					borderWidth: 0
+				},
+				area: {
+					stacking: 'normal',
+					marker: {
+						enabled: false
+					}
 				}
 			},
 			series: [],
@@ -184,7 +229,7 @@ $(function () {
 		});
 		
 		//Initiate the chart
-		energyChart = $('#energy').highcharts(energyChartOptions).highcharts();
+		//energyChart = $('#energy').highcharts(energyChartOptions).highcharts();
 		
 		$( "#from" ).datepicker({
 			dateFormat: "yy-mm-dd",
@@ -213,6 +258,11 @@ $(function () {
 			loadEnergyChart($( "#from" ).val(), $( "#to" ).val());
 		});
 
+		$( "#chartLive" )
+		.button()
+		.click(function() {
+			initLiveEnergy();
+		});
 		$( "#chartToDay" )
 		.button()
 		.click(function() {
@@ -244,3 +294,6 @@ var group = "M";
 var series = [];
 var energyChartOptions = [];
 var energyChart;
+var devicelist = [];
+var dataLoading = false;
+var liveDataInterval;

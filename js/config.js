@@ -7,7 +7,7 @@ function getEnergyDevices (energyDevicesTag, mainEnergyMeterTag) {
 		if(selectedDevices[0].energyDevices.length == 0){
 			$( "#energyConfig" ).dialog( "open" );
 		}else
-			loadEnergyChart(moment().startOf('d'), moment().startOf('d').add('d', 1));
+			initLiveEnergy();//loadEnergyChart(moment().startOf('d'), moment().startOf('d').add('d', 1));
 		$(energyDevicesTag).empty();
 		
 		energyDevices = Enumerable.From(devices[0]).Where("$.properties.showEnergy == '1'").Select("{name: $.name, roomId: $.roomID, fibaroId:$.id}").ToArray();
