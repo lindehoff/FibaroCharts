@@ -1,9 +1,17 @@
 Fibaro Charts
 ==========
-This is the first version (v0.1) of a charting tool for Fibaro's Home Center 2/Lite
+This is the second version (v0.2) of a charting tool for Fibaro's Home Center 2/Lite
 This version only includes Energy charts.
 
-Requirement
+Updates
+----------
+v0.1
+* Initial version
+
+v0.2
+* Added support for live energy data 
+
+Requirements
 ----------
 It has to be installed on a webserver running PHP 5
 Most of the work is being done on the client (JavaScript) but some things have to be done on a webserver.
